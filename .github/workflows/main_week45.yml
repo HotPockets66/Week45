@@ -9,6 +9,7 @@ on:
 jobs:
   - name: Install dependencies
     run: dotnet restore
+
   - name: Execute unit tests
     run: dotnet test
 
