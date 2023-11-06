@@ -1,4 +1,7 @@
-name: Build and deploy ASP.Net Core app to Azure Web App - Week45
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy ASP.Net Core app to Azure Web App - week45
 
 on:
   push:
@@ -7,75 +10,61 @@ on:
   workflow_dispatch:
 
 jobs:
-  - name: Install dependencies
+  build:
     runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
 
-      - name: Setup .NET Core
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 7.x
+          dotnet-version: '7.x'
           include-prerelease: true
-
-      - name: Restore dependencies
+          
+      - name: Install dependencies
         run: dotnet restore
 
-  - name: Execute unit tests
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 7.x
-          include-prerelease: true
-
-      - name: Run unit tests
+      - name: check for vulnerable packages
+        run: |
+          New-item vulnerabilities.txt
+          dotnet list package --vulnerable --include-transitive | Tee-Object vulnerabilities.txt
+          $matches = Get-Content vulnerabilities.txt | Select-String -Pattern "has the following vulnerable packages"
+          if($matches.Length -gt 0){echo 'vulnerable packages detected'; exit 1}
+      
+      - name: Execute unit tests
         run: dotnet test
-
-  - name: Build
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 7.x
-          include-prerelease: true
 
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
-      - name: Publish
-        run: dotnet publish -c Release -o ${{ runner.workspace }}/myapp
+      - name: dotnet publish
+        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: .net-app
-          path: ${{ runner.workspace }}/myapp
+          path: ${{env.DOTNET_ROOT}}/myapp
 
-  - name: Deploy
-    needs: Build
+  deploy:
     runs-on: windows-latest
+    needs: build
     environment:
       name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: .net-app
 
       - name: Deploy to Azure Web App
+        id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'Week45'
+          app-name: 'week45'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E9CF5C116BA94F6F92827F424242B87C }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D4016BA1029F4F2A805E562F2600353D }}
           package: .
