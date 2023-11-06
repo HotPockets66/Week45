@@ -12,8 +12,8 @@ jobs:
   - name: Execute unit tests
     run: dotnet test
 
-- name: build
-  runs-on: windows-latest
+  - name: build
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
           name: .net-app
           path: ${{env.DOTNET_ROOT}}/myapp
 
-  deploy:
+  - name: deploy
     runs-on: windows-latest
     needs: build
     environment:
