@@ -15,8 +15,8 @@ jobs:
   - name: Execute unit tests
     run: dotnet test
 
-  build:
-    runs-on: windows-latest
+- name: build
+  runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
